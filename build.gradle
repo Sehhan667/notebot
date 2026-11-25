@@ -1,0 +1,90 @@
+plugins {
+    id 'java'
+}
+
+apply plugin: "xyz.wagyourtail.unimined"
+
+base {
+    archivesName = project.archives_base_name
+}
+version = project.mod_version
+group = project.maven_group
+
+java {
+    sourceCompatibility = JavaVersion.toVersion(project.java_version)
+    targetCompatibility = JavaVersion.toVersion(project.java_version)
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(project.java_version.toInteger()))
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'fabric-maven'
+        url = 'https://maven.fabricmc.net/'
+    }
+}
+
+configurations {
+    fabricApiBundle
+}
+
+unimined.minecraft {
+    version project.minecraft_version
+
+    mappings {
+        mojmap()
+    }
+
+    fabric {
+        loader project.loader_version
+    }
+}
+
+dependencies {
+    // Fabric Loader annotations/entrypoints (provided by the loader at runtime)
+    compileOnly "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Fabric API is published as a bundle whose real modules live inside META-INF/jars.
+    // It is not bundled with this mod; players install it themselves.
+    fabricApiBundle "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+// Unpack the Fabric API modules so the compiler can see classes like KeyBindingHelper.
+def fabricApiModulesDir = layout.buildDirectory.dir("fabric-api-modules")
+
+tasks.register("extractFabricApiModules", Sync) {
+    from({ configurations.fabricApiBundle.collect { zipTree(it) } })
+    include "META-INF/jars/*.jar"
+    eachFile { it.path = it.name }
+    includeEmptyDirs = false
+    into fabricApiModulesDir
+}
+
+dependencies {
+    // Resolved lazily: the jars only exist after extractFabricApiModules has run.
+    compileOnly files(provider {
+        fileTree(fabricApiModulesDir.get().asFile) { include "*.jar" }.files
+    })
+}
+
+tasks.named("compileJava") {
+    dependsOn "extractFabricApiModules"
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand(version: project.version) {
+            escapeBackslash = true
+        }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release = project.java_version.toInteger()
+}

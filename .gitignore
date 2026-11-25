@@ -1,0 +1,22 @@
+# Build output
+build/
+out/
+bin/
+
+# Gradle
+.gradle/
+buildSrc/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Reference clones used during development
+_ref/
+
+# Logs
+*.log
