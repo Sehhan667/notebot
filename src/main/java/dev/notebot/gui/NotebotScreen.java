@@ -249,8 +249,7 @@ public final class NotebotScreen extends Screen {
         UiKit.frame(g, l - 8, 24, r + 8, height - 24, UiKit.BORDER);
         UiKit.centered(g, font, "Notebot", (l + r) / 2, 32, UiKit.TEXT);
 
-        String crumb = "notebot/" + (folder.isEmpty() ? "" : folder + "/");
-        UiKit.text(g, font, crumb, l, 44, UiKit.TEXT_DIM);
+        drawBreadcrumb(g, mouseX, mouseY, l, r);
 
         int topY = 60;
         boolean favHovered = in(mouseX, mouseY, r - 168, topY, r - 92, topY + 18);
@@ -264,24 +263,64 @@ public final class NotebotScreen extends Screen {
         boolean reloadHovered = in(mouseX, mouseY, r - 88, topY, r, topY + 18);
         UiKit.button(g, font, hotspots, r - 88, topY, 88, 18, "Reload", reloadHovered, this::reloadLibrary);
 
-        if (!folder.isEmpty()) {
-            boolean upHovered = in(mouseX, mouseY, l, topY, l + 52, topY + 18);
-            UiKit.button(g, font, hotspots, l, topY, 52, 18, "Up", upHovered, () -> {
-                int slash = folder.lastIndexOf('/');
-                folder = slash < 0 ? "" : folder.substring(0, slash);
-                scroll = 0;
-                refresh();
-            });
-        }
-
         drawRows(g, mouseX, mouseY, l, r);
         drawNowPlaying(g, mouseX, mouseY, l, r);
 
         super.extractRenderState(g, mouseX, mouseY, partialTick);
     }
 
-    private void drawRows(GuiGraphicsExtractor g, int mouseX, int mouseY, int l, int r) {
-        int top = listTop();
+    /** Breadcrumb: every segment is clickable, and an explicit Up button appears inside a folder. */
+    private void drawBreadcrumb(GuiGraphicsExtractor g, int mouseX, int mouseY, int l, int r) {
+        int y = 44;
+        int x = l;
+
+        if (!folder.isEmpty()) {
+            boolean hovered = in(mouseX, mouseY, x, y - 3, x + 28, y + 12);
+            UiKit.button(g, font, hotspots, x, y - 3, 28, 15, "Up", hovered, this::navigateUp);
+            x += 34;
+        }
+
+        x = crumbSegment(g, "notebot", "", x, y, mouseX, mouseY, true);
+
+        if (!folder.isEmpty()) {
+            String accumulated = "";
+            for (String part : folder.split("/")) {
+                if (part.isEmpty()) continue;
+                accumulated = accumulated.isEmpty() ? part : accumulated + "/" + part;
+
+                UiKit.text(g, font, "/", x + 2, y, UiKit.TEXT_DIM);
+                x += font.width("/") + 5;
+                if (x > r - 24) break;
+
+                x = crumbSegment(g, UiKit.trim(font, part, r - x - 4), accumulated, x, y, mouseX, mouseY, false);
+            }
+        }
+    }
+
+    private int crumbSegment(GuiGraphicsExtractor g, String label, String path, int x, int y,
+                             int mouseX, int mouseY, boolean root) {
+        int w = font.width(label);
+        boolean hovered = in(mouseX, mouseY, x - 2, y - 3, x + w + 2, y + 12);
+        int color = hovered ? 0xFFFFFFFF : (root ? UiKit.TEXT_DIM : UiKit.ACCENT);
+        UiKit.text(g, font, label, x, y, color);
+        if (hovered) g.fill(x, y + 10, x + w, y + 11, UiKit.ACCENT);
+
+        hotspots.add(x - 2, y - 3, x + w + 2, y + 12, () -> {
+            folder = path;
+            scroll = 0;
+            refresh();
+        });
+        return x + w;
+    }
+
+    private void navigateUp() {
+        int slash = folder.lastIndexOf('/');
+        folder = slash < 0 ? "" : folder.substring(0, slash);
+        scroll = 0;
+        refresh();
+    }
+
+    private void drawRows(GuiGraphicsExtractor g, int mouseX, int mouseY, int l, int r) {        int top = listTop();
         int bottom = listBottom();
 
         UiKit.rect(g, l, top, r, bottom, 0x40000000);
