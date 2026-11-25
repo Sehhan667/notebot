@@ -46,17 +46,25 @@ public final class SongDecoders {
     /**
      * Parses a song and applies the current settings (out-of-range transposition and instrument mapping).
      */
-    public static Song parse(File file, NotebotConfig config, Consumer<String> warn) throws Exception {
+    public static Song parse(File file, NotebotConfig config, Consumer<String> warn,
+                             dev.notebot.playback.OutputBackend backend) throws Exception {
         SongDecoder decoder = DECODERS.get(extension(file.getName()));
         if (decoder == null) throw new IllegalStateException("No decoder for " + file.getName());
 
         Song song = decoder.parse(file, warn);
-        fixSong(song, config, warn);
+        fixSong(song, config, warn, backend);
         song.finishLoading();
         return song;
     }
 
-    private static void fixSong(Song song, NotebotConfig config, Consumer<String> warn) {
+    /**
+     * Adapts the song to the backend that will play it.
+     * <p>
+     * Only noteblocks are limited to 0..24 (a block has 25 states); the preview and portable
+     * backends can play other pitches, so notes must not be dropped for them.
+     */
+    private static void fixSong(Song song, NotebotConfig config, Consumer<String> warn,
+                                dev.notebot.playback.OutputBackend backend) {
         var iterator = song.getNotesMap().entries().iterator();
         while (iterator.hasNext()) {
             var entry = iterator.next();
@@ -65,14 +73,21 @@ public final class SongDecoders {
 
             int level = note.getNoteLevel();
             if (level < 0 || level > 24) {
-                if (config.transposeOutOfRange) {
-                    while (level < 0) level += 12;
-                    while (level > 24) level -= 12;
-                    note.setNoteLevel(level);
-                } else {
-                    warn.accept("Note at tick " + tick + " is out of range, removed.");
-                    iterator.remove();
-                    continue;
+                switch (backend) {
+                    case NOTEBLOCK -> {
+                        if (config.transposeOutOfRange) {
+                            note.setNoteLevel(foldIntoRange(level));
+                        } else {
+                            warn.accept("Note at tick " + tick + " is out of range for noteblocks, removed.");
+                            iterator.remove();
+                            continue;
+                        }
+                    }
+                    // /playsound only accepts pitch 0.5..2.0, i.e. levels 0..24: fold by octaves.
+                    case PORTABLE -> note.setNoteLevel(foldIntoRange(level));
+                    // playSound accepts any positive pitch, keep the original note.
+                    case PREVIEW -> {
+                    }
                 }
             }
 
@@ -83,5 +98,13 @@ public final class SongDecoders {
                 note.setInstrument(null);
             }
         }
+    }
+
+    /** Moves a note into 0..24 by whole octaves. */
+    private static int foldIntoRange(int level) {
+        int value = level;
+        while (value < 0) value += 12;
+        while (value > 24) value -= 12;
+        return value;
     }
 }

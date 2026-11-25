@@ -95,7 +95,7 @@ public final class PlaybackEngine {
         }
 
         try {
-            Song parsed = SongDecoders.parse(file, config, NotebotMod::warnToChat);
+            Song parsed = SongDecoders.parse(file, config, NotebotMod::warnToChat, config.backend);
             consecutiveFailures = 0;
             begin(entry, parsed);
         } catch (Exception e) {
