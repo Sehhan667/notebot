@@ -83,11 +83,10 @@ public final class SongDecoders {
                             continue;
                         }
                     }
-                    // /playsound only accepts pitch 0.5..2.0, i.e. levels 0..24: fold by octaves.
-                    case PORTABLE -> note.setNoteLevel(foldIntoRange(level));
-                    // playSound accepts any positive pitch, keep the original note.
-                    case PREVIEW -> {
-                    }
+                    // The audio backend clamps playback rate to 0.5..2.0 (OpenAL's AL_PITCH range),
+                    // so keeping e.g. level 30 makes it sound as level 24 — audibly out of tune.
+                    // /playsound has the same 0.5..2.0 limit. Fold by octaves in both cases.
+                    case PORTABLE, PREVIEW -> note.setNoteLevel(foldIntoRange(level));
                 }
             }
 
