@@ -217,22 +217,11 @@ public final class PlaybackEngine {
                 }
             }
             case LOOP_ALL -> advance(1);
-            case SHUFFLE -> {
-                if (queue.size() <= 1) {
-                    tick = 0;
-                } else {
-                    int next;
-                    do {
-                        next = random.nextInt(queue.size());
-                    } while (next == queueIndex);
-                    queueIndex = next;
-                    playCurrent();
-                }
-            }
+            case SHUFFLE -> jumpRandom();
         }
     }
 
-    /** Moves to another queue entry, wrapping when looping through the whole queue. */
+    /** Moves to another queue entry, wrapping when the current mode loops the queue. */
     private void advance(int direction) {
         if (queue.isEmpty()) {
             stop();
@@ -241,7 +230,8 @@ public final class PlaybackEngine {
 
         int next = queueIndex + direction;
         if (next < 0 || next >= queue.size()) {
-            if (config.playMode == PlayMode.LOOP_ALL || config.playMode == PlayMode.SHUFFLE) {
+            // Manual navigation follows the mode: loop modes wrap, sequential stops at the end.
+            if (config.playMode == PlayMode.LOOP_ALL || config.playMode == PlayMode.LOOP_ONE) {
                 next = Math.floorMod(next, queue.size());
             } else {
                 if (direction > 0) {
@@ -256,8 +246,30 @@ public final class PlaybackEngine {
         playCurrent();
     }
 
+    /** Jumps to a random other entry; used by SHUFFLE for both automatic and manual switching. */
+    private void jumpRandom() {
+        if (queue.isEmpty()) return;
+        if (queue.size() == 1) {
+            queueIndex = 0;
+            playCurrent();
+            return;
+        }
+
+        int next;
+        do {
+            next = random.nextInt(queue.size());
+        } while (next == queueIndex);
+
+        queueIndex = next;
+        playCurrent();
+    }
+
     public void next() {
         if (queue.isEmpty()) return;
+        if (config.playMode == PlayMode.SHUFFLE) {
+            jumpRandom();
+            return;
+        }
         advance(1);
     }
 
@@ -266,6 +278,10 @@ public final class PlaybackEngine {
         // Music-player convention: restart the song first if we are more than 3s in.
         if (song != null && tick > 60) {
             tick = 0;
+            return;
+        }
+        if (config.playMode == PlayMode.SHUFFLE) {
+            jumpRandom();
             return;
         }
         advance(-1);
