@@ -90,11 +90,15 @@ public final class SongDecoders {
                 }
             }
 
-            if (config.usesExactInstruments()) {
-                NoteBlockInstrument mapped = config.mappedInstrument(note.getInstrument());
-                if (mapped != null) note.setInstrument(mapped);
-            } else {
-                note.setInstrument(null);
+            // Instrument mapping is a noteblock concept: it decides which block plays a note.
+            // Preview and portable should keep the instruments the song was written with.
+            if (backend == dev.notebot.playback.OutputBackend.NOTEBLOCK) {
+                if (config.usesExactInstruments()) {
+                    NoteBlockInstrument mapped = config.mappedInstrument(note.getInstrument());
+                    if (mapped != null) note.setInstrument(mapped);
+                } else {
+                    note.setInstrument(null);
+                }
             }
         }
     }
