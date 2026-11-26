@@ -62,7 +62,7 @@ MeteorClient 的 Notebot 功能独立移植版：一个带曲库、收藏夹、�
 ```powershell
 $env:JAVA_HOME='E:\MinecraftMods\tools\jdk-25'
 .\gradlew.bat build
-# 产物：build/libs/notebot-0.2.1.jar
+# 产物：build/libs/notebot-0.2.2.jar
 ```
 
 ## 已知限制

@@ -21,8 +21,16 @@ public final class PortableOutput implements NoteOutput {
     private final NotebotConfig config;
     private int commandsThisTick;
 
+    /** Timestamp of the last sent note command, used to tell our command errors from unrelated chat. */
+    private static volatile long lastSentAt;
+
     public PortableOutput(NotebotConfig config) {
         this.config = config;
+    }
+
+    /** True when note commands were sent within the last few seconds. */
+    public static boolean sentRecently() {
+        return System.currentTimeMillis() - lastSentAt < 3000L;
     }
 
     @Override
@@ -61,6 +69,9 @@ public final class PortableOutput implements NoteOutput {
             sent++;
         }
 
+        if (sent > 0) {
+            lastSentAt = System.currentTimeMillis();
+        }
         commandsThisTick += sent;
     }
 
