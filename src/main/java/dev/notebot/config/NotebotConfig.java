@@ -43,6 +43,8 @@ public final class NotebotConfig {
     public boolean swingArm = true;
     public boolean transposeOutOfRange = false;
     public int checkNoteblocksAgainDelay = 10;
+    /** How long a suspended song may be resumed after rejoining the world; 0 disables resuming. */
+    public int resumeWindowMinutes = 10;
 
     // ---- Note map: vanilla instrument name -> OptionalInstrument name ----
     public Map<String, String> instruments = defaultInstrumentMap();
@@ -115,6 +117,7 @@ public final class NotebotConfig {
         tickDelay = clamp(tickDelay, 1, 20);
         concurrentTuneBlocks = clamp(concurrentTuneBlocks, 1, 20);
         checkNoteblocksAgainDelay = clamp(checkNoteblocksAgainDelay, 1, 20);
+        resumeWindowMinutes = clamp(resumeWindowMinutes, 0, 120);
         portableMaxCommandsPerTick = clamp(portableMaxCommandsPerTick, 1, 32);
         volume = clampFloat(volume, 0.0f, 4.0f);
         portableVolume = clampFloat(portableVolume, 0.0f, 4.0f);

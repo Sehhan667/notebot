@@ -40,6 +40,7 @@
   "notebot.setting.swing_arm": "挥手",
   "notebot.setting.transpose": "超范围移调",
   "notebot.setting.recheck": "复查延迟",
+  "notebot.setting.resume_window": "续播时限（分钟）",
   "notebot.setting.portable_header": "随身输出（/playsound）",
   "notebot.setting.target": "目标",
   "notebot.setting.portable_volume": "音量 %",

@@ -45,6 +45,14 @@ public final class PlaybackEngine {
     private net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> lastDimension;
     private final Random random = new Random();
 
+    /** Snapshot kept when the player leaves the world, so a quick rejoin resumes the song. */
+    private record Saved(String songPath, int tick, java.util.List<String> queue, int index) {
+    }
+
+    private Saved saved;
+    private long savedAt;
+    private int pendingSeek = -1;
+
     public PlaybackEngine(NotebotConfig config, SongLibrary library) {
         this.config = config;
         this.library = library;
@@ -145,15 +153,17 @@ public final class PlaybackEngine {
     }
 
     public void tick() {
-        if (state == State.IDLE || song == null) return;
-
         var mc = net.minecraft.client.Minecraft.getInstance();
 
-        // Left the world (quit / disconnect / kicked): stop instead of ticking against no level.
         if (mc.player == null || mc.level == null) {
-            stop();
+            // Left the world (quit / disconnect / kicked): remember the position instead of dropping it.
+            if (song != null) suspend();
             return;
         }
+
+        if (saved != null) resumeIfPossible();
+
+        if (state == State.IDLE || song == null) return;
 
         // Changing dimension invalidates noteblock positions; just stop rather than play ghosts.
         var dimension = mc.level.dimension();
@@ -178,7 +188,8 @@ public final class PlaybackEngine {
             if (output != null) output.onTick();
             if (output != null && output.ready()) {
                 state = State.PLAYING;
-                tick = 0;
+                tick = pendingSeek >= 0 ? Math.min(pendingSeek, song.getLastTick()) : 0;
+                pendingSeek = -1;
             }
             VanillaMusic.tickWhilePlaying();
             return;
@@ -310,6 +321,62 @@ public final class PlaybackEngine {
         songPath = null;
         state = State.IDLE;
         tick = 0;
+        saved = null;
+        pendingSeek = -1;
+    }
+
+    /**
+     * Stops output but remembers the song and position, so rejoining the world shortly after
+     * continues where it left off. Used when the world is left, not when the user presses Stop.
+     */
+    public void suspend() {
+        if (song == null || songPath == null) {
+            stop();
+            return;
+        }
+
+        java.util.List<String> paths = new java.util.ArrayList<>();
+        for (SongEntry entry : queue) paths.add(entry.relativePath());
+
+        saved = new Saved(songPath, tick, paths, queueIndex);
+        savedAt = System.currentTimeMillis();
+
+        stopOutput();
+        song = null;
+        songPath = null;
+        state = State.IDLE;
+        tick = 0;
+    }
+
+    /** Rebuilds the saved queue and resumes from the saved tick, if the window has not expired. */
+    private void resumeIfPossible() {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return;
+
+        if (config.resumeWindowMinutes <= 0
+            || System.currentTimeMillis() - savedAt > config.resumeWindowMinutes * 60_000L) {
+            saved = null;
+            return;
+        }
+
+        Saved snapshot = saved;
+        saved = null;
+
+        java.util.List<SongEntry> entries = new java.util.ArrayList<>();
+        for (String path : snapshot.queue()) {
+            String name = path.substring(path.lastIndexOf('/') + 1);
+            entries.add(new SongEntry(path, name, 0, 0, null, null));
+        }
+        if (entries.isEmpty()) return;
+
+        setQueue(entries, Math.max(0, Math.min(snapshot.index(), entries.size() - 1)));
+        pendingSeek = snapshot.tick();
+        playCurrent();
+
+        if (state == State.PLAYING && song != null && pendingSeek >= 0) {
+            tick = Math.min(pendingSeek, song.getLastTick());
+            pendingSeek = -1;
+        }
     }
 
     private void stopOutput() {

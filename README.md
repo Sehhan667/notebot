@@ -30,6 +30,8 @@ MeteorClient 的 Notebot 功能独立移植版：一个带曲库、收藏夹、�
 - 播放页：上一首 / 播放暂停 / 下一首 / 停止、可拖动进度条、时间显示、
   循环模式（顺序 / 列表循环 / 单曲循环 / 随机）、音量、输出后端切换。
 - 四种循环模式在预览与随身模式下即时生效；音符盒模式切换歌曲会重新扫描调音。
+- 退出世界后若在「续播时限」内（默认 10 分钟，设置里可改或设为 0 关闭）
+  重新进入世界，会从上次播放到的进度继续。
 
 ### 三种输出后端
 
@@ -62,7 +64,7 @@ MeteorClient 的 Notebot 功能独立移植版：一个带曲库、收藏夹、�
 ```powershell
 $env:JAVA_HOME='E:\MinecraftMods\tools\jdk-25'
 .\gradlew.bat build
-# 产物：build/libs/notebot-0.2.2.jar
+# 产物：build/libs/notebot-0.3.0.jar
 ```
 
 ## 已知限制

@@ -53,6 +53,7 @@ public final class Lang {
         Map.entry("Swing arm", "notebot.setting.swing_arm"),
         Map.entry("Transpose out of range", "notebot.setting.transpose"),
         Map.entry("Re-check delay", "notebot.setting.recheck"),
+        Map.entry("Resume window (min)", "notebot.setting.resume_window"),
         Map.entry("Portable output (/playsound)", "notebot.setting.portable_header"),
         Map.entry("Target", "notebot.setting.target"),
         Map.entry("Volume %", "notebot.setting.portable_volume"),

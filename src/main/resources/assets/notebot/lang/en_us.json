@@ -40,6 +40,7 @@
   "notebot.setting.swing_arm": "Swing arm",
   "notebot.setting.transpose": "Transpose out of range",
   "notebot.setting.recheck": "Re-check delay",
+  "notebot.setting.resume_window": "Resume window (min)",
   "notebot.setting.portable_header": "Portable output (/playsound)",
   "notebot.setting.target": "Target",
   "notebot.setting.portable_volume": "Volume %",

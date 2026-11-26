@@ -93,6 +93,7 @@ public final class SettingsScreen extends Screen {
                 rows.add(boolRow("Swing arm", () -> config.swingArm, v -> config.swingArm = v));
                 rows.add(boolRow("Transpose out of range", () -> config.transposeOutOfRange, v -> config.transposeOutOfRange = v));
                 rows.add(intRow("Re-check delay", () -> config.checkNoteblocksAgainDelay, v -> config.checkNoteblocksAgainDelay = v, 1, 20));
+                rows.add(intRow("Resume window (min)", () -> config.resumeWindowMinutes, v -> config.resumeWindowMinutes = v, 0, 120));
                 rows.add(header("Portable output (/playsound)"));
                 rows.add(enumRow("Target", PortableTarget.values(), () -> config.portableTarget, v -> config.portableTarget = v));
                 rows.add(intRow("Volume %", () -> Math.round(config.portableVolume * 100),

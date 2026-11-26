@@ -50,7 +50,7 @@ public final class NotebotMod implements ClientModInitializer {
         engine = new PlaybackEngine(config, library);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> engine.tick());
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> engine.stop());
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> engine.suspend());
         Keybinds.init();
         PortableChatFilter.init();
 
